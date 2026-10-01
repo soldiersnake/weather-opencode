@@ -1,0 +1,29 @@
+════════════════════════════════════════
+         WEATHER CLI
+════════════════════════════════════════
+  1. Clima de ciudad default
+  2. Clima de todas las ciudades (1)
+  3. Buscar y agregar ciudad
+  4. Eliminar ciudad
+  5. Establecer ciudad default
+  8. Ajustes (°C)
+  9. Salir
+════════════════════════════════════════
+Selecciona una opción: 
+El clima en Gregorio de Laferrere, Argentina
+Temperatura: 11.4°C (Sensación: 9.8°C)
+Nublado, viento 6 km/h
+
+════════════════════════════════════════
+         WEATHER CLI
+════════════════════════════════════════
+  1. Clima de ciudad default
+  2. Clima de todas las ciudades (1)
+  3. Buscar y agregar ciudad
+  4. Eliminar ciudad
+  5. Establecer ciudad default
+  8. Ajustes (°C)
+  9. Salir
+════════════════════════════════════════
+Selecciona una opción: 
+¡Hasta luego!

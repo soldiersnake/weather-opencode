@@ -1,1 +1,3 @@
-console.log("Hello via Bun!");
+import { runMenu } from "./src/menu.ts";
+
+await runMenu();
