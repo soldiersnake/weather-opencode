@@ -1,4 +1,4 @@
-import type { City, CurrentWeather, Unit } from "./types.ts";
+import type { City, CurrentWeather, DailyForecast, Unit } from "./types.ts";
 
 interface ForecastResponse {
   current?:
@@ -7,6 +7,13 @@ interface ForecastResponse {
         apparent_temperature: number;
         wind_speed_10m: number;
         weather_code: number;
+      }
+    | undefined;
+  daily?:
+    | {
+        time: string[];
+        temperature_2m_max: number[];
+        temperature_2m_min: number[];
       }
     | undefined;
 }
@@ -53,7 +60,7 @@ export function convertTemperature(celsius: number, unit: Unit): number {
 
 export async function getWeather(city: City): Promise<CurrentWeather> {
   const url =
-    `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current=temperature_2m,apparent_temperature,wind_speed_10m,weather_code`;
+    `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current=temperature_2m,apparent_temperature,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`La API del clima respondió con error (${res.status}).`);
@@ -68,5 +75,27 @@ export async function getWeather(city: City): Promise<CurrentWeather> {
     apparentTemperature: current.apparent_temperature,
     windSpeed: current.wind_speed_10m,
     code: current.weather_code,
+    daily: parseDaily(data.daily),
   };
+}
+
+function parseDaily(
+  daily:
+    | {
+        time: string[];
+        temperature_2m_max: number[];
+        temperature_2m_min: number[];
+      }
+    | undefined,
+): DailyForecast[] {
+  if (!daily) return [];
+  const days: DailyForecast[] = [];
+  for (let i = 0; i < daily.time.length; i += 1) {
+    const date = daily.time[i];
+    const max = daily.temperature_2m_max[i];
+    const min = daily.temperature_2m_min[i];
+    if (date === undefined || max === undefined || min === undefined) continue;
+    days.push({ date, min, max });
+  }
+  return days;
 }

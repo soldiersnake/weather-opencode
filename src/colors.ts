@@ -1,30 +1,30 @@
-import { dlopen, ptr, suffix } from "bun:ffi";
+import { dlopen, ptr } from "bun:ffi";
 
-let enabled = process.stdout.isTTY === true;
+let enabled = false;
 
 const VT_ENABLE = 0x0004;
 
-function enableVirtualTerminal(): boolean {
-  if (process.platform !== "win32") return process.stdout.isTTY === true;
-  try {
-    const { symbols } = dlopen(`kernel32${suffix}`, {
-      GetStdHandle: { args: (["i32"] as const), returns: "ptr" },
-      GetConsoleMode: { args: (["ptr", "ptr"] as const), returns: "i32" },
-      SetConsoleMode: { args: (["ptr", "u32"] as const), returns: "i32" },
-    });
-    const handle = symbols.GetStdHandle(-11);
-    const mode = new Uint32Array(1);
-    if (symbols.GetConsoleMode(handle, ptr(mode)) === 0) return false;
-    if (symbols.SetConsoleMode(handle, mode[0]! | VT_ENABLE) === 0) return false;
-    return true;
-  } catch {
-    return false;
+function detectColors(): boolean {
+  if (process.platform === "win32") {
+    try {
+      const { symbols } = dlopen("kernel32.dll", {
+        GetStdHandle: { args: (["i32"] as const), returns: "ptr" },
+        GetConsoleMode: { args: (["ptr", "ptr"] as const), returns: "i32" },
+        SetConsoleMode: { args: (["ptr", "u32"] as const), returns: "i32" },
+      });
+      const handle = symbols.GetStdHandle(-11);
+      const mode = new Uint32Array(1);
+      if (symbols.GetConsoleMode(handle, ptr(mode)) === 0) return false;
+      if (symbols.SetConsoleMode(handle, mode[0]! | VT_ENABLE) === 0) return false;
+      return true;
+    } catch {
+      return false;
+    }
   }
+  return process.stdout.isTTY === true;
 }
 
-if (process.platform === "win32" && enabled) {
-  enabled = enableVirtualTerminal();
-}
+if (detectColors()) enabled = true;
 
 function paint(code: string, text: string): string {
   if (!enabled) return text;
@@ -33,6 +33,10 @@ function paint(code: string, text: string): string {
 
 export function cyan(text: string): string {
   return paint("36", text);
+}
+
+export function brightCyan(text: string): string {
+  return paint("96", text);
 }
 
 export function yellow(text: string): string {

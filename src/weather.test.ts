@@ -38,6 +38,64 @@ describe("getWeather", () => {
     expect(weather.apparentTemperature).toBeCloseTo(19.2);
     expect(weather.windSpeed).toBeCloseTo(12.4);
     expect(weather.code).toBe(2);
+    expect(weather.daily).toHaveLength(0);
+  });
+
+  test("parsea el pronóstico diario (7 días)", async () => {
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          current: {
+            temperature_2m: 18.34,
+            apparent_temperature: 19.2,
+            wind_speed_10m: 12.4,
+            weather_code: 2,
+          },
+          daily: {
+            time: [
+              "2026-10-02",
+              "2026-10-03",
+              "2026-10-04",
+              "2026-10-05",
+              "2026-10-06",
+              "2026-10-07",
+              "2026-10-08",
+            ],
+            temperature_2m_max: [21.4, 19.8, 20, 22.1, 23, 18.9, 17.2],
+            temperature_2m_min: [11, 9.5, 10.1, 12, 13.3, 8.8, 7.7],
+          },
+        }),
+        { status: 200 },
+      )) as unknown as typeof fetch;
+    const weather = await getWeather(OTTAWA);
+    expect(weather.daily).toHaveLength(7);
+    expect(weather.daily[0]!.date).toBe("2026-10-02");
+    expect(weather.daily[0]!.min).toBeCloseTo(11);
+    expect(weather.daily[6]!.max).toBeCloseTo(17.2);
+  });
+
+  test("daily incompleto: se descartan filas sin datos", async () => {
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          current: {
+            temperature_2m: 18.34,
+            apparent_temperature: 19.2,
+            wind_speed_10m: 12.4,
+            weather_code: 2,
+          },
+          daily: {
+            time: ["2026-10-02", "2026-10-03"],
+            temperature_2m_max: [21.4],
+            temperature_2m_min: [11, 9.5],
+          },
+        }),
+        { status: 200 },
+      )) as unknown as typeof fetch;
+    const weather = await getWeather(OTTAWA);
+    expect(weather.daily).toHaveLength(1);
+    expect(weather.daily[0]!.max).toBeCloseTo(21.4);
+    expect(weather.daily[0]!.min).toBeCloseTo(11);
   });
 
   test("sin datos current lanza error", async () => {

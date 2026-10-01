@@ -8,11 +8,14 @@ import {
 import { loadSettings, saveSettings, toggleUnit } from "./storage.ts";
 import { isSameCity } from "./validation.ts";
 import { withSpinner } from "./loading.ts";
-import { cyan, green, moveUpEraseBelow, red, yellow } from "./colors.ts";
-import type { City, Settings } from "./types.ts";
+import { brightCyan, cyan, green, moveUpEraseBelow, red, yellow } from "./colors.ts";
+import type { City, DailyForecast, Settings } from "./types.ts";
 
 const LINE = "════════════════════════════════════════";
+const WEEKDAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+const MENU_LINES = 12;
 let printedLines = 0;
+let menuDirty = false;
 
 function print(text: string): void {
   printedLines += countLines(text);
@@ -27,24 +30,54 @@ function countLines(text: string): number {
   return total;
 }
 
-function clearPreviousResult(): void {
-  rawPrint(moveUpEraseBelow(printedLines));
-  printedLines = 0;
+function clearPreviousResult(settings: Settings): void {
+  if (printedLines > 0) {
+    rawPrint(`\r${moveUpEraseBelow(printedLines)}`);
+    printedLines = 0;
+  }
+  if (menuDirty) {
+    menuDirty = false;
+    rawPrint(`\r${moveUpEraseBelow(MENU_LINES)}`);
+    printMenu(settings);
+  }
 }
 
 function printMenu(settings: Settings): void {
-  print(`${cyan(LINE)}
+  rawPrint(`${cyan(LINE)}
 ${cyan("         WEATHER CLI")}
 ${cyan(LINE)}
-  1. Clima de ciudad default
-  2. Clima de todas las ciudades (${settings.cities.length})
-  3. Buscar y agregar ciudad
-  4. Eliminar ciudad
-  5. Establecer ciudad default
-  8. Ajustes (°${settings.unit})
-  9. Salir
+  ${cyan("1.")} Clima de ciudad default
+  ${cyan("2.")} Clima de todas las ciudades ${yellow(`(${settings.cities.length})`)}
+  ${cyan("3.")} Buscar y agregar ciudad
+  ${cyan("4.")} Eliminar ciudad
+  ${cyan("5.")} Establecer ciudad default
+  ${cyan("8.")} Ajustes (°${settings.unit})
+  ${red("9.")} Salir
 ${cyan(LINE)}
 `);
+}
+
+function formatDay(iso: string): string {
+  const parts = iso.split("-");
+  const year = Number(parts[0]);
+  const month = Number(parts[1]);
+  const day = Number(parts[2]);
+  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) return iso;
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return `${WEEKDAYS[weekday] ?? ""} ${String(day).padStart(2, "0")}`;
+}
+
+function printTable(daily: DailyForecast[], settings: Settings): void {
+  if (daily.length === 0) return;
+  const unit = `°${settings.unit}`;
+  print(`\n  ${cyan("Día")}       ${cyan("Mínima")}    ${cyan("Máxima")}\n`);
+  for (const day of daily.slice(0, 7)) {
+    const min = convertTemperature(day.min, settings.unit).toFixed(1);
+    const max = convertTemperature(day.max, settings.unit).toFixed(1);
+    print(
+      `  ${formatDay(day.date).padEnd(10)}${yellow(`${min}${unit}`.padStart(9))}   ${yellow(`${max}${unit}`.padStart(9))}\n`,
+    );
+  }
 }
 
 async function printWeather(city: City, settings: Settings): Promise<void> {
@@ -52,9 +85,12 @@ async function printWeather(city: City, settings: Settings): Promise<void> {
     const weather = await withSpinner(`Consultando clima de ${city.name}...`, getWeather(city));
     const temp = convertTemperature(weather.temperature, settings.unit);
     const feels = convertTemperature(weather.apparentTemperature, settings.unit);
+    const unit = `°${settings.unit}`;
     print(
-      `\nEl clima en ${city.name}, ${city.country}\nTemperatura: ${yellow(`${temp.toFixed(1)}°${settings.unit}`)} (Sensación: ${yellow(`${feels.toFixed(1)}°${settings.unit}`)})\n${describeWeatherCode(weather.code)}, viento ${weather.windSpeed.toFixed(0)} km/h\n\n`,
+      `\n${brightCyan(`El clima en ${city.name}, ${city.country}`)}\nTemperatura: ${yellow(`${temp.toFixed(1)}${unit}`)} (Sensación: ${yellow(`${feels.toFixed(1)}${unit}`)})\n${describeWeatherCode(weather.code)}, viento ${yellow(`${weather.windSpeed.toFixed(0)} km/h`)}\n`,
     );
+    printTable(weather.daily, settings);
+    print("\n");
   } catch (error: unknown) {
     print(`\n${red(`No se pudo obtener el clima de ${city.name}: ${error instanceof Error ? error.message : "error desconocido"}`)}\n\n`);
   }
@@ -86,6 +122,7 @@ async function findAndAddCity(settings: Settings): Promise<void> {
     }
     settings.cities.push(city);
     if (!settings.defaultCity) settings.defaultCity = city;
+    menuDirty = true;
     await saveSettings(settings);
     print(`\n${green(`Ciudad agregada: ${city.name}, ${city.country}`)}\n\n`);
   } catch (error: unknown) {
@@ -188,6 +225,7 @@ async function updateSettings(settings: Settings): Promise<void> {
   const newUnit = choice === "1" ? "C" : "F";
   if (newUnit !== settings.unit) {
     settings.unit = toggleUnit(settings.unit);
+    menuDirty = true;
     await saveSettings(settings);
   }
   print(`\n${green(`Unidad configurada: °${settings.unit}`)}\n\n`);
@@ -195,16 +233,10 @@ async function updateSettings(settings: Settings): Promise<void> {
 
 export async function runMenu(): Promise<void> {
   const settings = await loadSettings();
-  let firstIteration = true;
+  printMenu(settings);
 
   let running = true;
   while (running) {
-    if (firstIteration) {
-      firstIteration = false;
-    } else {
-      clearPreviousResult();
-    }
-    printMenu(settings);
     const answer = await ask("Selecciona una opción: ");
     if (answer === null) {
       print(`\n${green("¡Hasta luego!")}\n`);
@@ -212,26 +244,32 @@ export async function runMenu(): Promise<void> {
     }
     switch (answer.trim()) {
       case "1": {
+        clearPreviousResult(settings);
         await showDefaultCityWeather(settings);
         break;
       }
       case "2": {
+        clearPreviousResult(settings);
         await showAllCitiesWeather(settings);
         break;
       }
       case "3": {
+        clearPreviousResult(settings);
         await findAndAddCity(settings);
         break;
       }
       case "4": {
+        clearPreviousResult(settings);
         await removeCity(settings);
         break;
       }
       case "5": {
+        clearPreviousResult(settings);
         await setDefaultCity(settings);
         break;
       }
       case "8": {
+        clearPreviousResult(settings);
         await updateSettings(settings);
         break;
       }
@@ -240,6 +278,7 @@ export async function runMenu(): Promise<void> {
         break;
       }
       default: {
+        clearPreviousResult(settings);
         print(`\n${red("Opción inválida.")}\n\n`);
       }
     }
