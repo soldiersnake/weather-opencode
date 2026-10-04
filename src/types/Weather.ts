@@ -1,18 +1,3 @@
-export interface City {
-  name: string;
-  country: string;
-  latitude: number;
-  longitude: number;
-}
-
-export type Unit = "C" | "F";
-
-export interface Settings {
-  defaultCity: City | null;
-  cities: City[];
-  unit: Unit;
-}
-
 export interface CurrentWeather {
   temperature: number;
   apparentTemperature: number;
@@ -26,6 +11,3 @@ export interface DailyForecast {
   min: number;
   max: number;
 }
-
-
-

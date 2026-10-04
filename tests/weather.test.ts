@@ -1,6 +1,7 @@
-﻿import { afterEach, describe, expect, test } from "bun:test";
-import { convertTemperature, describeWeatherCode, getWeather } from "./weather.ts";
-import type { City } from "./types.ts";
+import { afterEach, describe, expect, test } from "bun:test";
+import { describeWeatherCode, getWeather } from "../src/api/weather.ts";
+import { convertTemperature, toggleUnit } from "../src/utils/format.ts";
+import type { City } from "../src/types/City.ts";
 
 const REAL_FETCH = globalThis.fetch;
 
@@ -132,14 +133,19 @@ describe("describeWeatherCode", () => {
   });
 });
 
-describe("convertTemperature", () => {
-  test("C a F", () => {
+describe("format", () => {
+  test("convertTemperature C a F", () => {
     expect(convertTemperature(0, "F")).toBe(32);
     expect(convertTemperature(100, "F")).toBeCloseTo(212);
     expect(convertTemperature(20, "F")).toBe(68);
   });
 
-  test("C a C es identidad", () => {
+  test("convertTemperature C a C es identidad", () => {
     expect(convertTemperature(21.5, "C")).toBe(21.5);
+  });
+
+  test("toggleUnit alterna C/F", () => {
+    expect(toggleUnit("C")).toBe("F");
+    expect(toggleUnit("F")).toBe("C");
   });
 });

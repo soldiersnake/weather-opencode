@@ -1,4 +1,4 @@
-import type { City } from "./types.ts";
+import type { City } from "../types/City.ts";
 
 export function isCity(value: unknown): value is City {
   if (typeof value !== "object" || value === null) return false;

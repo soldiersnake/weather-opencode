@@ -1,3 +1,3 @@
-import { runMenu } from "./src/menu.ts";
+import { runMenu } from "./src/presentation/menu.ts";
 
 await runMenu();

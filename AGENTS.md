@@ -12,17 +12,17 @@ Weather CLI - a working console application that asks for a city name and shows 
 
 ## Structure
 
+Follows `references/file-system.md`:
+
 - `index.ts` - entry point, runs the menu
-- `src/menu.ts` - interactive numbered menu (Spanish UI), colors, clears previous answer before reprinting the menu
-- `src/input.ts` - manual stdin reader (Bun's readline loses buffered piped input on Windows) + `print`, `stdout` exports
-- `src/geocoding.ts` - city name → possible matches (list selection when ambiguous)
-- `src/weather.ts` - forecast fetch + WMO code descriptions (Spanish) + °C→°F conversion
-- `src/storage.ts` - load/save settings JSON in `~/.config/weather-cli/`
-- `src/colors.ts` - ANSI colors, no dependencies (cyan menu, yellow temps, green ok, red error); disabled without TTY
-- `src/loading.ts` - spinner for async HTTP requests (TTY only)
-- `src/validation.ts` - `isCity` / `isSameCity` guards
-- `src/types.ts` - shared types (`City`, `Unit`, `Settings`, `CurrentWeather`)
-- `*.test.ts` - bun tests with mocked `fetch` and temp-dir storage
+- `src/actions/` - one module per menu action: `getWeather.ts` (default city weather), `listCities.ts` (weather of all saved cities), `addCity.ts` `removeCity.ts` `setDefaultCity.ts`, `updateUnitSettings.ts`
+- `src/presentation/` - `menu.ts` (bucle + selección + borrado de respuesta anterior), `input.ts` (manual stdin reader, Bun readline loses buffered piped input on Windows), `output.ts` (print helpers, weather view con tabla de 7 días, line counting)
+- `src/storage/` - `dataFile.ts` (JSON at `~/.config/weather-cli/`, migration of legacy local data.json), `citiesStorage.ts` (cities + default), `settingsStorage.ts` (unit)
+- `src/api/` - `geocoding.ts` (city → candidates), `weather.ts` (forecast + WMO descriptions + daily parse)
+- `src/types/` - `City.ts`, `Weather.ts`, `Settings.ts`, `MenuOption.ts`
+- `src/utils/` - `constants.ts`, `format.ts` (día corto, °C→°F), `colors.ts` (ANSI, VT enable via kernel32 through bun:ffi; disabled on redirect), `loading.ts` (spinner ruta aquí), `validation.ts`
+- `src/watch-build.ts` - dev watcher (custom, porque `bun build --watch` no se recompila en Windows)
+- `tests/` - bun tests with mocked `fetch` and temp-dir storage (`bun run test`)
 
 ## Commands
 

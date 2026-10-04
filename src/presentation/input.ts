@@ -1,5 +1,7 @@
 import { stdin, stdout } from "node:process";
 
+export { stdout };
+
 type Resolver = (line: string | null) => void;
 
 const queue: string[] = [];
@@ -44,8 +46,6 @@ function deliver(line: string): void {
   queue.push(line);
 }
 
-export { stdout };
-
 export function ask(question: string): Promise<string | null> {
   stdout.write(question);
   startReading();
@@ -57,8 +57,4 @@ export function ask(question: string): Promise<string | null> {
   return new Promise((resolve) => {
     pending = resolve;
   });
-}
-
-export function print(text: string): void {
-  stdout.write(text);
 }

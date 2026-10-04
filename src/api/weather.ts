@@ -1,4 +1,5 @@
-import type { City, CurrentWeather, DailyForecast, Unit } from "./types.ts";
+import type { City } from "../types/City.ts";
+import type { CurrentWeather, DailyForecast } from "../types/Weather.ts";
 
 interface ForecastResponse {
   current?:
@@ -51,11 +52,6 @@ const WMO_DESCRIPTIONS = new Map<number, string>([
 
 export function describeWeatherCode(code: number): string {
   return WMO_DESCRIPTIONS.get(code) ?? `Código desconocido (${code})`;
-}
-
-export function convertTemperature(celsius: number, unit: Unit): number {
-  if (unit === "F") return celsius * (9 / 5) + 32;
-  return celsius;
 }
 
 export async function getWeather(city: City): Promise<CurrentWeather> {

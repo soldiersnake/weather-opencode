@@ -1,4 +1,4 @@
-import type { City } from "./types.ts";
+import type { City } from "../types/City.ts";
 
 interface GeocodingResponse {
   results?:

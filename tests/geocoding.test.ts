@@ -1,6 +1,6 @@
-﻿import { afterEach, describe, expect, test } from "bun:test";
-import { searchCities } from "./geocoding.ts";
-import type { City } from "./types.ts";
+import { afterEach, describe, expect, test } from "bun:test";
+import { searchCities } from "../src/api/geocoding.ts";
+import type { City } from "../src/types/City.ts";
 
 const REAL_FETCH = globalThis.fetch;
 const FAKE_URL = "";

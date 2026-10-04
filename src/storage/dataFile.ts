@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, renameSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-import type { Settings, Unit } from "./types.ts";
-import { isCity } from "./validation.ts";
+import type { Settings } from "../types/Settings.ts";
+import { isCity } from "../utils/validation.ts";
 
 let dataFile = path.join(homedir(), ".config", "weather-cli", "data.json");
 
@@ -10,7 +10,11 @@ export function useDataFile(file: string): void {
   dataFile = file;
 }
 
-export async function loadSettings(): Promise<Settings> {
+export function getDataFile(): string {
+  return dataFile;
+}
+
+export async function readSettings(): Promise<Settings> {
   migrateLocalFile();
   return await Bun.file(dataFile)
     .json()
@@ -18,13 +22,9 @@ export async function loadSettings(): Promise<Settings> {
     .catch(() => defaultSettings());
 }
 
-export async function saveSettings(settings: Settings): Promise<void> {
+export async function writeSettings(settings: Settings): Promise<void> {
   mkdirSync(path.dirname(dataFile), { recursive: true });
   await Bun.write(dataFile, JSON.stringify(settings, null, 2));
-}
-
-export function toggleUnit(unit: Unit): Unit {
-  return unit === "C" ? "F" : "C";
 }
 
 function migrateLocalFile(): void {
@@ -46,6 +46,6 @@ function parseSettings(data: unknown): Settings {
   const cities = Array.isArray(raw["cities"])
     ? raw["cities"].filter((c): c is NonNullable<Settings["defaultCity"]> => isCity(c))
     : fallback.cities;
-  const unit: Unit = raw["unit"] === "F" ? "F" : "C";
+  const unit: Settings["unit"] = raw["unit"] === "F" ? "F" : "C";
   return { defaultCity, cities, unit };
 }
