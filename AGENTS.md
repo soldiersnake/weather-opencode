@@ -22,6 +22,8 @@ Follows `references/file-system.md`:
 - `src/types/` - `City.ts`, `Weather.ts`, `Settings.ts`, `MenuOption.ts`
 - `src/utils/` - `constants.ts`, `format.ts` (día corto, °C→°F), `colors.ts` (ANSI, VT enable via kernel32 through bun:ffi; disabled on redirect), `loading.ts` (spinner ruta aquí), `validation.ts`
 - `src/watch-build.ts` - dev watcher (custom, porque `bun build --watch` no se recompila en Windows)
+- `src/build.ts` - build script usado por `bun run build`; parametrizable con env vars `TARGET` (`bun-windows-x64` por defecto) y `OUTFILE` (`weather`) para cross-compilar (Bun `--compile` con target/outfile explícitos)
+- `.github/workflows/release.yml` - Release automático en push a `main`: compara la versión de `package.json` con la del commit anterior; si cambió (o ejecución manual con input `version`) corre tests, compila binarios linux-x64, darwin-arm64 y windows-x64, y publica tag `vX.Y.Z` + GitHub Release (`softprops/action-gh-release@v2`). Verificado con actionlint.
 - `tests/` - bun tests with mocked `fetch` and temp-dir storage (`bun run test`)
 
 ## Commands
@@ -30,7 +32,7 @@ Follows `references/file-system.md`:
 bun install        # install dependencies
 bun run start      # run the app (index.ts)
 bun run dev        # run the app with watch mode (restarts on file changes)
-bun run build      # compile executable binary: weather.exe (Windows) - user-added script
+bun run build      # compile executable binary: weather.exe (Windows) - llama a src/build.ts (TARGET/OUTFILE por env)
 bun run build:watch # watch src/ and index.ts, regenerate the binary on every change
 bun run test       # bun test
 bun init           # (already done) scaffold
